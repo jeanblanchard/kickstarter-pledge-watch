@@ -28,7 +28,7 @@ import os
 import time
 import urllib2
 import HTMLParser
-import webbrowser
+from subprocess import call
 from optparse import OptionParser
 
 # Parse the pledge HTML page
@@ -92,7 +92,7 @@ class KickstarterHTMLParser(HTMLParser.HTMLParser):
         # Extract the pledge amount (the cost)
         if self.in_li_block and tag == 'input' and 'pledge__radio' in attrs['class']:
             # remove everything except the actual number
-            amount = attrs['title'].encode('ascii','ignore')
+            amount = attrs['title'].encode('ascii', 'ignore')
             nondigits = amount.translate(None, '0123456789.')
             amount = amount.translate(None, nondigits)
             # Convert the value into a float
@@ -123,8 +123,6 @@ class KickstarterHTMLParser(HTMLParser.HTMLParser):
         return self.rewards
 
 def pledge_menu(rewards):
-    import re
-
     count = len(rewards)
 
     # If there is only one qualifying pledge level, then just select it
@@ -144,9 +142,31 @@ def pledge_menu(rewards):
         except (IndexError, NameError, SyntaxError):
             continue
 
-parser = OptionParser(usage="usage: %prog [options] project-url [cost-of-pledge ...]\n"
-                      "project-url is the URL of the Kickstarter project\n"
-                      "cost-of-pledge is the cost of the target pledge.\n"
+def which(program):
+    import os
+
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+parser = OptionParser(usage="usage: %prog [options] project-url [command] [cost-of-pledge ...]\n"
+                      "Where:\n"
+                      " - project-url is the URL of the Kickstarter project.\n"
+                      " - command is a command to run once the pledge is available, with the pledge url as a param.\n"
+                      " - cost-of-pledge is the cost of the target pledge.\n"
+                      "If command is unspecified, it defaults to opening a new browser tab.\n"
                       "If cost-of-pledge is not specified, then a menu of pledges is shown.\n"
                       "Specify cost-of-pledge only if that amount is unique among pledges.\n"
                       "Only restricted pledges are supported.")
@@ -163,6 +183,15 @@ if len(args) < 1:
     parser.error('no URL specified')
     sys.exit(0)
 
+# Command to run
+if len(args) > 1 and which(args[1]) is not None:
+    command = args[1]
+    firstPledgeArg = 2
+else:
+    command = os.path.dirname(os.path.realpath(sys.argv[0])) + '/openlink.py'
+    firstPledgeArg = 1
+print 'Command: %s' % command
+
 # Generate the URL
 url = args[0].split('?', 1)[0]  # drop the stuff after the ?
 url += '/pledge/new' # we want the pledge-editing page
@@ -170,8 +199,8 @@ pledges = None   # The pledge amounts on the command line
 ids = None       # A list of IDs of the pledge levels
 selected = None  # A list of selected pledge levels
 rewards = None   # A list of valid reward levels
-if len(sys.argv) > 2:
-    pledges = map(float, args[1:])
+if len(args) > firstPledgeArg:
+    pledges = map(float, args[firstPledgeArg:])
 
 ks = KickstarterHTMLParser()
 
@@ -197,7 +226,7 @@ while True:
         if not s[1] in [r[1] for r in rewards]:
             print '%s - Reward available!' % time.strftime('%B %d, %Y %I:%M %p')
             print s[2]
-            webbrowser.open_new_tab(url)
+            call([command, url])
             selected = [x for x in selected if x != s]   # Remove the pledge we just found
             if not selected:     # If there are no more pledges to check, then exit
                 time.sleep(10)   # Give the web browser time to open

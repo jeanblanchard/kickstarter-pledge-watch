@@ -9,12 +9,18 @@ amount and select the new pledge.
 `kswatch.py` must be run from the command line.  Since this is a Python
 program, you must have Python installed.
 
-Usage: `kswatch.py project-url [cost-of-pledge]`
+Usage: `kswatch.py project-url [command] [cost-of-pledge]`
 
-Where project-url is the URL of the Kickstarter project, and cost-of-pledge
-is the cost of the target pledge. If cost-of-pledge is not specified, then
-a menu of pledges is shown.  Specify cost-of-pledge only if that amount
-is unique among pledges.  Only restricted pledges are supported.
+Where:
+ 
+ - project-url is the URL of the Kickstarter project
+ - command is a command to run once the pledge is available, with the pledge url as a param
+ - cost-of-pledge is the cost of the target pledge.
+
+If command is unspecified, it defaults to opening a new browser tab.
+If cost-of-pledge is not specified, then a menu of pledges is shown.
+Specify cost-of-pledge only if that amount is unique among pledges.
+Only restricted pledges are supported.
 
 Example:
 
