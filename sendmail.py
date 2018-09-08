@@ -8,6 +8,8 @@ sender = 'kswatch@kswatch'
 smtpserver = 'localhost'
 smtpuser = ''
 smtppassword = ''
+smtptls = True
+smtpstarttls = False
 
 if len(sys.argv) > 1:
     url = sys.argv[1]
@@ -23,7 +25,12 @@ A limited pledge has become available.
 ''' % (sender, receiver, url)
 
 try:
-    smtp = smtplib.SMTP(smtpserver)
+    if smtptls:
+        smtp = smtplib.SMTP_SSL(smtpserver)
+    else:
+        smtp = smtplib.SMTP(smtpserver)
+    if smtpstarttls:
+        smtp.starttls()
     if smtpuser != '':
         smtp.login(smtpuser, smtppassword)
     smtp.sendmail(sender, [receiver], message)
